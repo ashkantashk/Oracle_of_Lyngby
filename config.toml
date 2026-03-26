@@ -1,0 +1,16 @@
+[theme]
+base = "light"
+primaryColor = "#990000"
+backgroundColor = "#faf6ee"
+secondaryBackgroundColor = "#f0eee8"
+textColor = "#1a1a1a"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showSidebarNavigation = false
+# "minimal" hides the Settings panel (which contains the theme toggle)
+# preventing users from switching to dark mode and breaking the custom palette
+toolbarMode = "minimal"
