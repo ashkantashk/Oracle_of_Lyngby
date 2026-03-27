@@ -361,9 +361,124 @@ obs.observe(document.body, { childList: true, subtree: true });
 
 # ── Search engine ───────────────────────────────────────────────────────
 @st.cache_resource
-def load_engine(available_only: bool):
+def load_engine(available_only: bool, method: str = "tfidf"):
+    if method == "embedding":
+        from search_engine import EmbeddingSearchEngine
+        return EmbeddingSearchEngine(available_only=available_only)
     from search_engine import OracleSearchEngine
     return OracleSearchEngine(available_only=available_only)
+
+
+@st.cache_resource
+def load_explore_engine(available_only: bool):
+    from search_engine import ExploreEngine
+    return ExploreEngine(available_only=available_only)
+
+
+def render_results(
+    results,
+    rag_text=None,
+    score_label: str = "match",
+    score_hi: float = 0.3,
+    score_mid: float = 0.15,
+):
+    """Render advisor result cards — shared by query and explore modes."""
+    from search_engine import generate_match_explanation
+
+    if not results:
+        st.info("The Oracle found no matching advisors.")
+        return
+
+    if rag_text:
+        st.markdown("#### 🤖 AI-Powered Analysis")
+        st.markdown(rag_text)
+        st.markdown("---")
+
+    for rank, result in enumerate(results, 1):
+        advisor = result["advisor"]
+        score = result["score"]
+        _label = result.get("score_label", score_label)
+        score_cls = (
+            "score-high" if score > score_hi
+            else ("score-mid" if score > score_mid else "score-low")
+        )
+        avail = advisor["availability"]
+        if avail == "available":
+            avail_cls = "avail-ok"
+            avail_label = f"✓ Available ({advisor['current_students']}/{advisor['max_students']} students)"
+        elif avail == "limited":
+            avail_cls = "avail-limited"
+            avail_label = f"⚠ Limited ({advisor['current_students']}/{advisor['max_students']} students)"
+        else:
+            avail_cls = "avail-full"
+            avail_label = "✕ At capacity"
+
+        explanation = generate_match_explanation(result)
+        links_html = (
+            f'<a href="{advisor["profile_url"]}" target="_blank">🌐 Profile</a>'
+            f' &nbsp;·&nbsp; '
+            f'<a href="{advisor["orbit_url"]}" target="_blank">📚 Orbit</a>'
+            f' &nbsp;·&nbsp; '
+            f'<a href="mailto:{advisor["email"]}">✉ {advisor["email"]}</a>'
+        )
+        interests_html = "".join(
+            f"<li>{html_module.escape(i)}</li>" for i in advisor["research_interests"]
+        )
+        courses_html = (
+            "".join(f"<li>{html_module.escape(c)}</li>" for c in advisor["courses"])
+            if advisor["courses"] else ""
+        )
+        pubs_html = "".join(
+            f"<li><em>{html_module.escape(p)}</em></li>"
+            for p in advisor["recent_publications"]
+        )
+        topics_html = "".join(
+            f"<li>{html_module.escape(t)}</li>" for t in advisor["supervised_topics"]
+        )
+        courses_block = (
+            f'<div class="field-label" style="margin-top: 0.8rem;">Courses</div>'
+            f'<ul class="profile-list">{courses_html}</ul>'
+        ) if courses_html else ""
+
+        full_card = f"""
+        <div class="advisor-card">
+            <div class="advisor-rank">#{rank}</div>
+            <div class="advisor-name">{advisor['name']}</div>
+            <div class="advisor-title-line">
+                {advisor['title']} &nbsp;·&nbsp; {advisor['building']}
+            </div>
+            <div style="margin-bottom: 0.6rem;">
+                <span class="advisor-section-badge">{advisor['section']}</span>
+                <span class="match-score {score_cls}">{_label}: {score:.0%}</span>
+                <span class="availability-tag {avail_cls}">{avail_label}</span>
+            </div>
+            <div class="match-explanation">
+                {explanation.replace(chr(10), '<br>')}
+            </div>
+            <div class="advisor-links" style="margin-top: 0.8rem;">
+                {links_html}
+            </div>
+        </div>
+        <details class="oracle-details">
+            <summary>📋 Full profile — {advisor['name']}</summary>
+            <div class="details-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div>
+                        <div class="field-label">Research Interests</div>
+                        <ul class="profile-list">{interests_html}</ul>
+                        {courses_block}
+                    </div>
+                    <div>
+                        <div class="field-label">Recent Publications</div>
+                        <ul class="profile-list">{pubs_html}</ul>
+                        <div class="field-label" style="margin-top: 0.8rem;">Past Thesis Topics</div>
+                        <ul class="profile-list">{topics_html}</ul>
+                    </div>
+                </div>
+            </div>
+        </details>
+        """
+        st.markdown(full_card, unsafe_allow_html=True)
 
 
 # ── Sidebar ─────────────────────────────────────────────────────────────
@@ -374,6 +489,28 @@ with st.sidebar:
                        help="How many advisor recommendations to return")
     available_only = st.toggle("Available advisors only", value=True,
                                 help="Exclude advisors at full capacity or unavailable")
+    search_method = st.radio(
+        "Search method",
+        options=["tfidf", "embedding"],
+        format_func=lambda x: "TF-IDF (keyword)" if x == "tfidf" else "Embedding (semantic)",
+        help=(
+            "**TF-IDF** matches exact keywords. **Embedding** uses a sentence "
+            "transformer model (all-MiniLM-L6-v2) to capture semantic meaning, "
+            "so 'neural networks' also matches advisors who publish on 'deep learning'."
+        ),
+    )
+    st.markdown("---")
+    st.markdown("# 🧭 Mode")
+    app_mode = st.radio(
+        "Mode",
+        options=["query", "explore"],
+        format_func=lambda x: "🔍 Query — describe your idea" if x == "query" else "🧭 Explore — pick topics interactively",
+        label_visibility="collapsed",
+        help="**Query**: write a free-text description. **Explore**: pick between pairs of thesis topics to let ORACLE learn your preference.",
+    )
+    if app_mode == "explore":
+        explore_rounds = st.slider("Rounds (N)", min_value=3, max_value=15, value=7,
+                                    help="How many topic pairs to compare before showing results")
     st.markdown("---")
     st.markdown("# 🔑 RAG Explanations")
     api_key = st.text_input("Anthropic API Key", type="password",
@@ -429,8 +566,155 @@ if "rag_text" not in st.session_state:
     st.session_state.rag_text = None
 if "last_query" not in st.session_state:
     st.session_state.last_query = ""
+# ── Explore mode state ──────────────────────────────────────────────────
+if "explore_round" not in st.session_state:
+    st.session_state.explore_round = 0        # current round index (0-based)
+if "explore_choices" not in st.session_state:
+    st.session_state.explore_choices = []     # list of chosen topic dicts
+if "explore_done" not in st.session_state:
+    st.session_state.explore_done = False
+if "explore_pair" not in st.session_state:
+    st.session_state.explore_pair = None      # (idx_a, idx_b) for current round
+if "explore_pair_round" not in st.session_state:
+    st.session_state.explore_pair_round = -1  # round for which pair was computed
+if "explore_shown_pairs" not in st.session_state:
+    st.session_state.explore_shown_pairs = []  # list of [idx_a, idx_b] pairs shown
+if "explore_rejected" not in st.session_state:
+    st.session_state.explore_rejected = []    # list of unchosen topic dicts
 
 
+# ══════════════════════════════════════════════════════════════════════
+# EXPLORE MODE
+# ══════════════════════════════════════════════════════════════════════
+if app_mode == "explore":
+    if not st.session_state.explore_done:
+        round_idx = st.session_state.explore_round
+        total = explore_rounds
+
+        st.markdown(f"""
+        <p style="font-size: 1.02rem; color: var(--text-color); opacity: 0.6; max-width: 680px;
+        margin: 0 auto 1rem auto; text-align: center; line-height: 1.6;">
+        Which thesis topic sounds more interesting to you?<br>
+        Round <strong>{round_idx + 1}</strong> of <strong>{total}</strong>.
+        </p>""", unsafe_allow_html=True)
+
+        # ── Progress bar ────────────────────────────────────────────────
+        st.progress(round_idx / total)
+
+        # ── Resolve topic pair for this round ───────────────────────────
+        explore_eng = load_explore_engine(available_only)
+        if st.session_state.explore_pair_round != round_idx:
+            if round_idx == 0:
+                idx_a, idx_b = explore_eng.cold_start_pair()
+            else:
+                idx_a, idx_b = explore_eng.adaptive_pair(
+                    st.session_state.explore_choices,
+                    st.session_state.explore_rejected,
+                    st.session_state.explore_shown_pairs,
+                )
+            st.session_state.explore_pair = (idx_a, idx_b)
+            st.session_state.explore_pair_round = round_idx
+
+        idx_a, idx_b = st.session_state.explore_pair
+        topic_a_info = explore_eng.topics[idx_a]
+        topic_b_info = explore_eng.topics[idx_b]
+        topic_a = topic_a_info["text"]
+        topic_b = topic_b_info["text"]
+
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.markdown(f"""
+            <div class="advisor-card" style="min-height: 140px; display:flex;
+                flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
+                <p style="font-size:1.05rem; text-align:center; margin:0 0 0.5rem 0;">
+                    {html_module.escape(topic_a)}
+                </p>
+                <p style="font-size:0.78rem; text-align:center; margin:0; opacity:0.45;">
+                    {html_module.escape(topic_a_info['advisor_name'])}
+                </p>
+            </div>""", unsafe_allow_html=True)
+            if st.button("Choose A", key=f"pick_a_{round_idx}", use_container_width=True, type="primary"):
+                st.session_state.explore_choices.append(topic_a_info)
+                st.session_state.explore_rejected.append(topic_b_info)
+                st.session_state.explore_shown_pairs.append([idx_a, idx_b])
+                st.session_state.explore_pair_round = -1  # force new pair next round
+                if round_idx + 1 >= total:
+                    st.session_state.explore_done = True
+                else:
+                    st.session_state.explore_round += 1
+                st.rerun()
+        with col_b:
+            st.markdown(f"""
+            <div class="advisor-card" style="min-height: 140px; display:flex;
+                flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
+                <p style="font-size:1.05rem; text-align:center; margin:0 0 0.5rem 0;">
+                    {html_module.escape(topic_b)}
+                </p>
+                <p style="font-size:0.78rem; text-align:center; margin:0; opacity:0.45;">
+                    {html_module.escape(topic_b_info['advisor_name'])}
+                </p>
+            </div>""", unsafe_allow_html=True)
+            if st.button("Choose B", key=f"pick_b_{round_idx}", use_container_width=True, type="primary"):
+                st.session_state.explore_choices.append(topic_b_info)
+                st.session_state.explore_rejected.append(topic_a_info)
+                st.session_state.explore_shown_pairs.append([idx_a, idx_b])
+                st.session_state.explore_pair_round = -1  # force new pair next round
+                if round_idx + 1 >= total:
+                    st.session_state.explore_done = True
+                else:
+                    st.session_state.explore_round += 1
+                st.rerun()
+
+        # ── Reset button ─────────────────────────────────────────────────
+        if round_idx > 0:
+            if st.button("↩ Start over", key="explore_reset"):
+                st.session_state.explore_round = 0
+                st.session_state.explore_choices = []
+                st.session_state.explore_done = False
+                st.session_state.explore_pair = None
+                st.session_state.explore_pair_round = -1
+                st.session_state.explore_shown_pairs = []
+                st.session_state.explore_rejected = []
+                st.session_state.search_results = None
+                st.rerun()
+
+    else:
+        explore_eng = load_explore_engine(available_only)
+        with st.spinner("The Oracle is reading your preferences..."):
+            explore_results = explore_eng.rank_advisors(
+                st.session_state.explore_choices,
+                st.session_state.explore_rejected,
+                top_k=top_k,
+            )
+        st.markdown(
+            f"### The Oracle's Top {len(explore_results)} "
+            f"Recommendation{'s' if len(explore_results) != 1 else ''}"
+        )
+        st.caption("Ranked by preference match \u2014 based on your topic selections.")
+        render_results(
+            explore_results,
+            score_label="preference match",
+            score_hi=0.55,
+            score_mid=0.40,
+        )
+        st.markdown("---")
+        if st.button("\u21a9 Explore again", key="explore_reset_done"):
+            st.session_state.explore_round = 0
+            st.session_state.explore_choices = []
+            st.session_state.explore_done = False
+            st.session_state.explore_pair = None
+            st.session_state.explore_pair_round = -1
+            st.session_state.explore_shown_pairs = []
+            st.session_state.explore_rejected = []
+            st.session_state.search_results = None
+            st.rerun()
+
+    st.stop()   # don't render the query mode UI below
+
+
+# ══════════════════════════════════════════════════════════════════════
+# QUERY MODE
+# ══════════════════════════════════════════════════════════════════════
 # ── Search input ────────────────────────────────────────────────────────
 st.markdown("""
 <p style="font-size: 1.02rem; color: var(--text-color); opacity: 0.6; max-width: 680px;
@@ -471,7 +755,7 @@ if st.session_state.show_examples:
 
 # ── Search — store results in session_state so they survive reruns ──────
 if search_clicked and query.strip():
-    engine = load_engine(available_only)
+    engine = load_engine(available_only, method=search_method)
 
     with st.spinner("The Oracle is consulting the archives of Lyngby..."):
         st.session_state.search_results = engine.search(query.strip(), top_k=top_k)
@@ -500,85 +784,7 @@ if st.session_state.search_results is not None:
         st.info("The Oracle found no matching advisors. Try broadening your description.")
     else:
         st.markdown(f"### Top {len(results)} Advisor{'s' if len(results) > 1 else ''} for Your Query")
-
-        if rag_text:
-            st.markdown("#### 🤖 AI-Powered Analysis")
-            st.markdown(rag_text)
-            st.markdown("---")
-
-        for rank, result in enumerate(results, 1):
-            advisor = result["advisor"]
-            score = result["score"]
-
-            score_cls = "score-high" if score > 0.3 else ("score-mid" if score > 0.15 else "score-low")
-            avail = advisor["availability"]
-            if avail == "available":
-                avail_cls = "avail-ok"
-                avail_label = f"✓ Available ({advisor['current_students']}/{advisor['max_students']} students)"
-            elif avail == "limited":
-                avail_cls = "avail-limited"
-                avail_label = f"⚠ Limited ({advisor['current_students']}/{advisor['max_students']} students)"
-            else:
-                avail_cls = "avail-full"
-                avail_label = "✕ At capacity"
-
-            from search_engine import generate_match_explanation
-            explanation = generate_match_explanation(result)
-
-            links_html = (
-                f'<a href="{advisor["profile_url"]}" target="_blank">🌐 Profile</a>'
-                f' &nbsp;·&nbsp; '
-                f'<a href="{advisor["orbit_url"]}" target="_blank">📚 Orbit</a>'
-                f' &nbsp;·&nbsp; '
-                f'<a href="mailto:{advisor["email"]}">✉ {advisor["email"]}</a>'
-            )
-
-            interests_html = "".join(f"<li>{html_module.escape(i)}</li>" for i in advisor["research_interests"])
-            courses_html = "".join(f"<li>{html_module.escape(c)}</li>" for c in advisor["courses"]) if advisor["courses"] else ""
-            pubs_html = "".join(f"<li><em>{html_module.escape(p)}</em></li>" for p in advisor["recent_publications"])
-            topics_html = "".join(f"<li>{html_module.escape(t)}</li>" for t in advisor["supervised_topics"])
-
-            courses_block = f'<div class="field-label" style="margin-top: 0.8rem;">Courses</div><ul class="profile-list">{courses_html}</ul>' if courses_html else ''
-
-            full_card = f"""
-            <div class="advisor-card">
-                <div class="advisor-rank">#{rank}</div>
-                <div class="advisor-name">{advisor['name']}</div>
-                <div class="advisor-title-line">
-                    {advisor['title']} &nbsp;·&nbsp; {advisor['building']}
-                </div>
-                <div style="margin-bottom: 0.6rem;">
-                    <span class="advisor-section-badge">{advisor['section']}</span>
-                    <span class="match-score {score_cls}">match: {score:.0%}</span>
-                    <span class="availability-tag {avail_cls}">{avail_label}</span>
-                </div>
-                <div class="match-explanation">
-                    {explanation.replace(chr(10), '<br>')}
-                </div>
-                <div class="advisor-links" style="margin-top: 0.8rem;">
-                    {links_html}
-                </div>
-            </div>
-            <details class="oracle-details">
-                <summary>📋 Full profile — {advisor['name']}</summary>
-                <div class="details-body">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                        <div>
-                            <div class="field-label">Research Interests</div>
-                            <ul class="profile-list">{interests_html}</ul>
-                            {courses_block}
-                        </div>
-                        <div>
-                            <div class="field-label">Recent Publications</div>
-                            <ul class="profile-list">{pubs_html}</ul>
-                            <div class="field-label" style="margin-top: 0.8rem;">Past Thesis Topics</div>
-                            <ul class="profile-list">{topics_html}</ul>
-                        </div>
-                    </div>
-                </div>
-            </details>
-            """
-            st.markdown(full_card, unsafe_allow_html=True)
+        render_results(results, rag_text=rag_text)
 
 
 # ── About Section ───────────────────────────────────────────────────────
@@ -611,9 +817,14 @@ the right thesis advisor.
 (`people.compute.dtu.dk`), DTU Orbit publications, Kursusbasen
 course descriptions, and supervised thesis records.
 
-**Architecture:** TF-IDF + cosine similarity baseline (Approach 1–2),
-with optional RAG layer (Approach 3). Designed to be extended with
-embedding-based search, knowledge graphs, or ensemble ranking.
+**Architecture:**
+- **TF-IDF (keyword)** — sparse cosine similarity over unigrams/bigrams.
+  Fast and exact, but misses synonyms and paraphrases.
+- **Embedding (semantic)** — dense retrieval with `all-MiniLM-L6-v2`
+  (sentence-transformers). Encodes meaning so "neural networks" matches
+  advisors writing about "deep learning".
+- _(Optional)_ **RAG layer** — Claude-powered natural-language
+  explanations when an Anthropic API key is provided.
 
 ---
 
