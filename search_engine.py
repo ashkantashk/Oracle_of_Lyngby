@@ -6,6 +6,9 @@ Designed to be swapped for embedding-based search (Approach 2) or
 extended with a RAG layer (Approach 3) during the hackathon.
 """
 
+import hashlib
+from pathlib import Path
+
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -101,79 +104,133 @@ class ExploreEngine:
     """
     Powers the interactive explore mode.
 
-    Pre-embeds every supervised_topic across all advisors, then surfaces
-    topic pairs for pairwise preference elicitation.
+    Each advisor is represented by a single ``supervisor_summary`` embedding.
+    Pairwise preference elicitation asks users to choose between two advisor
+    summaries; since there is exactly one embedding per advisor there is no
+    need to average across topics.
 
     Strategy
     --------
-    - Cold start (round 0): maximally dissimilar cross-advisor pair.
+    - Cold start (round 0): maximally dissimilar pair of advisors.
     - Adaptive (round ≥ 1): active-learning pair selection at the decision
-      boundary. Each topic gets a contrastive score:
+      boundary. Each advisor gets a contrastive score:
           score(i) = sim(i, p+) − β·sim(i, p−)
       where p+ = normalised mean of chosen embeddings and p− = normalised
-      mean of rejected embeddings. Pairs are then ranked by:
+      mean of rejected embeddings. Pairs are ranked by:
           uncertainty × diversity = (1 − |score_i − score_j|) × (1 − sim(i,j))
-      High uncertainty means the model cannot yet distinguish which topic the
-      user would prefer; high diversity keeps exploration broad.
-    - Ranking: each advisor scored by their *mean* contrastive score across
-      all their topics (not max), so a single matching topic cannot dominate.
+    - Ranking: score is read directly per advisor — no averaging required.
     """
+
+    _CACHE_DIR = Path(__file__).parent / ".cache"
 
     def __init__(
         self,
         available_only: bool = True,
         model_name: str = "all-MiniLM-L6-v2",
     ):
+        try:
+            from advisors_data_enriched import get_available_advisors as _get_avail
+            from advisors_data_enriched import get_all_advisors as _get_all
+        except ImportError:
+            _get_avail = get_available_advisors
+            _get_all = get_all_advisors
+
+        self.advisors = _get_avail() if available_only else _get_all()
+
+        # One entry per advisor — index equals advisor_idx
+        self.topics: list[dict] = [
+            {
+                "text": advisor.get("supervisor_summary", ""),
+                "topic_idx": adv_idx,
+                "advisor_idx": adv_idx,
+                "advisor_name": advisor["name"],
+            }
+            for adv_idx, advisor in enumerate(self.advisors)
+        ]
+
+        self.embeddings = self._load_embeddings(model_name)
+
+    def _load_embeddings(self, model_name: str) -> np.ndarray:
+        """
+        Return embeddings for all advisor summaries.
+        On a cache hit (texts unchanged) the SentenceTransformer model is never
+        loaded — making subsequent starts essentially instant.
+        Cache is stored in .cache/ next to search_engine.py, keyed by an MD5
+        hash of the concatenated summary texts.
+        """
+        texts = [t["text"] for t in self.topics]
+        texts_hash = hashlib.md5("\n".join(texts).encode()).hexdigest()
+
+        self._CACHE_DIR.mkdir(exist_ok=True)
+        emb_file = self._CACHE_DIR / f"explore_embeddings_{texts_hash}.npy"
+
+        if emb_file.exists():
+            return np.load(str(emb_file))
+
+        # Cache miss — encode and save
         from sentence_transformers import SentenceTransformer
-
-        self.advisors = get_available_advisors() if available_only else get_all_advisors()
-
-        # Flatten all topics; store topic_idx for fast embedding lookup
-        self.topics: list[dict] = []
-        for adv_idx, advisor in enumerate(self.advisors):
-            for topic in advisor["supervised_topics"]:
-                self.topics.append({
-                    "text": topic,
-                    "topic_idx": len(self.topics),
-                    "advisor_idx": adv_idx,
-                    "advisor_name": advisor["name"],
-                })
-
-        self.model = SentenceTransformer(model_name)
-        self.embeddings = self.model.encode(
-            [t["text"] for t in self.topics],
+        model = SentenceTransformer(model_name)
+        embeddings = model.encode(
+            texts,
             convert_to_numpy=True,
             normalize_embeddings=True,
             show_progress_bar=False,
         )
+        np.save(str(emb_file), embeddings)
+
+        # Remove stale cache files for this engine to avoid unbounded growth
+        for old in self._CACHE_DIR.glob("explore_embeddings_*.npy"):
+            if old != emb_file:
+                old.unlink(missing_ok=True)
+
+        return embeddings
 
     def cold_start_pair(self) -> tuple[int, int]:
-        """
-        Return indices (i, j) of the two topics that are maximally
-        semantically dissimilar and come from different advisors.
-        """
-        sim = cosine_similarity(self.embeddings, self.embeddings)
-        n = len(self.topics)
-
-        # Mask out same-advisor pairs and the diagonal (self-similarity = 1.0)
-        for i in range(n):
-            for j in range(n):
-                if self.topics[i]["advisor_idx"] == self.topics[j]["advisor_idx"]:
-                    sim[i, j] = np.inf  # won't be chosen as minimum
-
+        """Return indices of the two most dissimilar advisors."""
+        sim = cosine_similarity(self.embeddings, self.embeddings).copy()
         np.fill_diagonal(sim, np.inf)
-
         flat_idx = int(np.argmin(sim))
-        i, j = divmod(flat_idx, n)
+        i, j = divmod(flat_idx, len(self.topics))
         return i, j
+
+    def next_advisor(
+        self, choices: list[dict], rejections: list[dict], shown_idxs: list[int]
+    ) -> int:
+        """
+        Select the single most informative advisor to show next.
+
+        Cold start (no feedback yet): pick the most central advisor —
+        the one with the highest mean similarity to all others, giving
+        a representative starting point.
+
+        With feedback: pick the not-yet-shown advisor whose contrastive
+        score is closest to zero (maximum uncertainty about preference).
+        If all advisors have been shown already, restart from the most
+        uncertain across the full set.
+        """
+        shown_set = set(shown_idxs)
+        candidates = [i for i in range(len(self.topics)) if i not in shown_set]
+
+        if not candidates:
+            candidates = list(range(len(self.topics)))  # all shown — wrap around
+
+        if not choices and not rejections:
+            # Cold start: most representative (central) advisor
+            sim_matrix = cosine_similarity(self.embeddings, self.embeddings)
+            mean_sim = sim_matrix.sum(axis=1)
+            return int(max(candidates, key=lambda i: mean_sim[i]))
+
+        scores = self._contrastive_scores(choices, rejections)
+        # Most uncertain = score closest to 0
+        return int(min(candidates, key=lambda i: abs(float(scores[i]))))
 
     def _contrastive_scores(self, choices: list[dict], rejections: list[dict], beta: float = 0.5) -> np.ndarray:
         """
-        Per-topic contrastive score: sim(i, p+) − beta * sim(i, p−)
+        Per-advisor contrastive score: sim(i, p+) − beta * sim(i, p−)
 
-        p+ = L2-normalised mean of chosen topic embeddings.
-        p− = L2-normalised mean of rejected topic embeddings (zero vector if none).
-        Returns a (n_topics,) array; higher = more preferred.
+        p+ = L2-normalised mean of chosen advisor embeddings.
+        p− = L2-normalised mean of rejected advisor embeddings (zero if none).
+        Returns an (n_advisors,) array; higher = more preferred.
         """
         pos_idxs = [c["topic_idx"] for c in choices]
         p_plus = self.embeddings[pos_idxs].mean(axis=0)
@@ -198,13 +255,12 @@ class ExploreEngine:
         """
         Select the next pair (i, j) using active learning at the decision boundary.
 
-        Each topic gets a contrastive score (see _contrastive_scores). The pair
+        Each advisor gets a contrastive score (see _contrastive_scores). The pair
         maximising uncertainty × diversity is chosen:
             (1 − |score_i − score_j|) × (1 − sim(i, j))
 
-        Where scores are similar the model is uncertain which the user prefers,
-        making it the most informative question. Diversity keeps exploration broad.
-        Only cross-advisor, not-yet-shown pairs are considered.
+        All pairs are cross-advisor by construction (one entry per advisor).
+        Already-shown pairs are skipped.
         """
         scores = self._contrastive_scores(choices, rejections)
         sim_matrix = cosine_similarity(self.embeddings, self.embeddings)
@@ -216,8 +272,6 @@ class ExploreEngine:
 
         for i in range(n):
             for j in range(i + 1, n):
-                if self.topics[i]["advisor_idx"] == self.topics[j]["advisor_idx"]:
-                    continue
                 if frozenset((i, j)) in shown_set:
                     continue
                 uncertainty = 1.0 - abs(float(scores[i]) - float(scores[j]))
@@ -233,47 +287,26 @@ class ExploreEngine:
         self, choices: list[dict], rejections: list[dict], top_k: int = 5
     ) -> list[dict]:
         """
-        Rank advisors by their *mean* contrastive score across all their topics.
+        Rank advisors by their contrastive score (one score per advisor).
 
-        Using the mean (rather than max) prevents a single highly-matching topic
-        from dominating; advisors with broad alignment rank higher than those
-        with one very close topic but many unrelated ones.
-        Scores are min-max normalised to [0, 1] across the returned top-k for display.
+        Scores are min-max normalised to [0, 1] for display.
         Returns the same result-dict format as OracleSearchEngine.search().
         """
         scores = self._contrastive_scores(choices, rejections)
+        top_indices = np.argsort(scores)[::-1][:top_k]
 
-        n_advisors = len(self.advisors)
-        advisor_topic_data: list[list[tuple]] = [[] for _ in range(n_advisors)]
-
-        for t_idx, topic in enumerate(self.topics):
-            adv_idx = topic["advisor_idx"]
-            advisor_topic_data[adv_idx].append((float(scores[t_idx]), topic["text"]))
-
-        # Mean contrastive score per advisor
-        advisor_mean_scores = np.array([
-            np.mean([s for s, _ in ts]) if ts else -np.inf
-            for ts in advisor_topic_data
-        ])
-
-        top_indices = np.argsort(advisor_mean_scores)[::-1][:top_k]
-
-        # Min-max normalise display scores across the returned set
-        raw = advisor_mean_scores[top_indices]
+        raw = scores[top_indices]
         lo, hi = raw.min(), raw.max()
         scale = hi - lo if hi > lo else 1.0
 
         results = []
         for adv_idx in top_indices:
-            raw_score = float(advisor_mean_scores[adv_idx])
-            display_score = (raw_score - lo) / scale
+            display_score = (float(scores[adv_idx]) - lo) / scale
             advisor = self.advisors[int(adv_idx)]
-            best_topics = sorted(advisor_topic_data[int(adv_idx)], reverse=True)[:3]
-            matched = {"supervised_topics": [t for _, t in best_topics]}
             results.append({
                 "advisor": advisor,
                 "score": display_score,
-                "matched_fields": matched,
+                "matched_fields": {"supervisor_summary": [advisor.get("supervisor_summary", "")]},
                 "score_label": "preference match",
             })
 

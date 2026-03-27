@@ -573,12 +573,12 @@ if "explore_choices" not in st.session_state:
     st.session_state.explore_choices = []     # list of chosen topic dicts
 if "explore_done" not in st.session_state:
     st.session_state.explore_done = False
-if "explore_pair" not in st.session_state:
-    st.session_state.explore_pair = None      # (idx_a, idx_b) for current round
+if "explore_current" not in st.session_state:
+    st.session_state.explore_current = None   # advisor idx for current round
 if "explore_pair_round" not in st.session_state:
-    st.session_state.explore_pair_round = -1  # round for which pair was computed
+    st.session_state.explore_pair_round = -1  # round for which current was computed
 if "explore_shown_pairs" not in st.session_state:
-    st.session_state.explore_shown_pairs = []  # list of [idx_a, idx_b] pairs shown
+    st.session_state.explore_shown_pairs = []  # list of shown advisor indices
 if "explore_rejected" not in st.session_state:
     st.session_state.explore_rejected = []    # list of unchosen topic dicts
 
@@ -594,76 +594,58 @@ if app_mode == "explore":
         st.markdown(f"""
         <p style="font-size: 1.02rem; color: var(--text-color); opacity: 0.6; max-width: 680px;
         margin: 0 auto 1rem auto; text-align: center; line-height: 1.6;">
-        Which thesis topic sounds more interesting to you?<br>
+        Does this research area interest you?<br>
         Round <strong>{round_idx + 1}</strong> of <strong>{total}</strong>.
         </p>""", unsafe_allow_html=True)
 
         # ── Progress bar ────────────────────────────────────────────────
         st.progress(round_idx / total)
 
-        # ── Resolve topic pair for this round ───────────────────────────
+        # ── Resolve current advisor for this round ──────────────────────
         explore_eng = load_explore_engine(available_only)
         if st.session_state.explore_pair_round != round_idx:
-            if round_idx == 0:
-                idx_a, idx_b = explore_eng.cold_start_pair()
-            else:
-                idx_a, idx_b = explore_eng.adaptive_pair(
-                    st.session_state.explore_choices,
-                    st.session_state.explore_rejected,
-                    st.session_state.explore_shown_pairs,
-                )
-            st.session_state.explore_pair = (idx_a, idx_b)
+            idx = explore_eng.next_advisor(
+                st.session_state.explore_choices,
+                st.session_state.explore_rejected,
+                st.session_state.explore_shown_pairs,
+            )
+            st.session_state.explore_current = idx
             st.session_state.explore_pair_round = round_idx
 
-        idx_a, idx_b = st.session_state.explore_pair
-        topic_a_info = explore_eng.topics[idx_a]
-        topic_b_info = explore_eng.topics[idx_b]
-        topic_a = topic_a_info["text"]
-        topic_b = topic_b_info["text"]
+        idx = st.session_state.explore_current
+        topic_info = explore_eng.topics[idx]
+        summary_text = topic_info["text"]
 
-        col_a, col_b = st.columns(2)
-        with col_a:
+        _, col_card, _ = st.columns([1, 3, 1])
+        with col_card:
             st.markdown(f"""
-            <div class="advisor-card" style="min-height: 140px; display:flex;
-                flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
-                <p style="font-size:1.05rem; text-align:center; margin:0 0 0.5rem 0;">
-                    {html_module.escape(topic_a)}
-                </p>
-                <p style="font-size:0.78rem; text-align:center; margin:0; opacity:0.45;">
-                    {html_module.escape(topic_a_info['advisor_name'])}
+            <div class="advisor-card" style="min-height: 160px; display:flex;
+                flex-direction:column; align-items:center; justify-content:center;">
+                <p style="font-size:1.05rem; text-align:center; margin:0; line-height:1.6;">
+                    {html_module.escape(summary_text)}
                 </p>
             </div>""", unsafe_allow_html=True)
-            if st.button("Choose A", key=f"pick_a_{round_idx}", use_container_width=True, type="primary"):
-                st.session_state.explore_choices.append(topic_a_info)
-                st.session_state.explore_rejected.append(topic_b_info)
-                st.session_state.explore_shown_pairs.append([idx_a, idx_b])
-                st.session_state.explore_pair_round = -1  # force new pair next round
-                if round_idx + 1 >= total:
-                    st.session_state.explore_done = True
-                else:
-                    st.session_state.explore_round += 1
-                st.rerun()
-        with col_b:
-            st.markdown(f"""
-            <div class="advisor-card" style="min-height: 140px; display:flex;
-                flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
-                <p style="font-size:1.05rem; text-align:center; margin:0 0 0.5rem 0;">
-                    {html_module.escape(topic_b)}
-                </p>
-                <p style="font-size:0.78rem; text-align:center; margin:0; opacity:0.45;">
-                    {html_module.escape(topic_b_info['advisor_name'])}
-                </p>
-            </div>""", unsafe_allow_html=True)
-            if st.button("Choose B", key=f"pick_b_{round_idx}", use_container_width=True, type="primary"):
-                st.session_state.explore_choices.append(topic_b_info)
-                st.session_state.explore_rejected.append(topic_a_info)
-                st.session_state.explore_shown_pairs.append([idx_a, idx_b])
-                st.session_state.explore_pair_round = -1  # force new pair next round
-                if round_idx + 1 >= total:
-                    st.session_state.explore_done = True
-                else:
-                    st.session_state.explore_round += 1
-                st.rerun()
+            col_like, col_dislike = st.columns(2)
+            with col_like:
+                if st.button("👍  Sounds interesting", key=f"like_{round_idx}", use_container_width=True, type="primary"):
+                    st.session_state.explore_choices.append(topic_info)
+                    st.session_state.explore_shown_pairs.append(idx)
+                    st.session_state.explore_pair_round = -1
+                    if round_idx + 1 >= total:
+                        st.session_state.explore_done = True
+                    else:
+                        st.session_state.explore_round += 1
+                    st.rerun()
+            with col_dislike:
+                if st.button("👎  Not for me", key=f"dislike_{round_idx}", use_container_width=True):
+                    st.session_state.explore_rejected.append(topic_info)
+                    st.session_state.explore_shown_pairs.append(idx)
+                    st.session_state.explore_pair_round = -1
+                    if round_idx + 1 >= total:
+                        st.session_state.explore_done = True
+                    else:
+                        st.session_state.explore_round += 1
+                    st.rerun()
 
         # ── Reset button ─────────────────────────────────────────────────
         if round_idx > 0:
@@ -671,7 +653,7 @@ if app_mode == "explore":
                 st.session_state.explore_round = 0
                 st.session_state.explore_choices = []
                 st.session_state.explore_done = False
-                st.session_state.explore_pair = None
+                st.session_state.explore_current = None
                 st.session_state.explore_pair_round = -1
                 st.session_state.explore_shown_pairs = []
                 st.session_state.explore_rejected = []
@@ -702,7 +684,7 @@ if app_mode == "explore":
             st.session_state.explore_round = 0
             st.session_state.explore_choices = []
             st.session_state.explore_done = False
-            st.session_state.explore_pair = None
+            st.session_state.explore_current = None
             st.session_state.explore_pair_round = -1
             st.session_state.explore_shown_pairs = []
             st.session_state.explore_rejected = []
