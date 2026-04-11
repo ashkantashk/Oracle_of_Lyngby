@@ -133,13 +133,15 @@ def generate_match_explanation(result: dict) -> str:
     return "\n".join(lines)
 
 
-# ── RAG-style explanation using Anthropic API ──────────────────────────
+# ── RAG-style explanation using Google Gemini API (FREE) ────────────────
 
 def generate_rag_explanation(query: str, results: list[dict], api_key: str = None) -> str:
     """
-    Use the Anthropic API to generate natural-language explanations
+    Use Google Gemini API to generate natural-language explanations
     for why each advisor matches the student's query.
-    Falls back to template-based explanations if no API key is set.
+
+    Get a FREE API key at: https://aistudio.google.com/apikey
+    (no credit card required, generous free tier)
     """
     if not api_key:
         return None
@@ -184,22 +186,20 @@ Format your response as:
 
     try:
         resp = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "Content-Type": "application/json",
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-            },
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+            headers={"Content-Type": "application/json"},
             json={
-                "model": "claude-sonnet-4-20250514",
-                "max_tokens": 1500,
-                "messages": [{"role": "user", "content": prompt}],
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "maxOutputTokens": 1500,
+                    "temperature": 0.7,
+                },
             },
             timeout=30,
         )
         if resp.status_code == 200:
             data = resp.json()
-            return data["content"][0]["text"]
+            return data["candidates"][0]["content"]["parts"][0]["text"]
     except Exception:
         pass
 

@@ -25,11 +25,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Load Material Symbols font via <link> (most reliable method) ────────
-st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-""", unsafe_allow_html=True)
-
 # ── CSS — uses Streamlit theme vars for auto dark/light support ─────────
 st.markdown("""
 <style>
@@ -56,7 +51,11 @@ st.markdown("""
 
 /* ── Fonts only — no color overrides on native elements ──────────── */
 h1, h2, h3 { font-family: 'DM Serif Display', serif !important; }
-p, li, span, div, label, .stMarkdown { font-family: 'Source Sans 3', sans-serif !important; }
+/* IMPORTANT: span is deliberately excluded here.
+   Streamlit uses <span> elements with font-family "Material Symbols Rounded"
+   for icons like the sidebar collapse arrow. If we override span with
+   !important, the icon font gets replaced and icon names render as text. */
+p, li, div, label, .stMarkdown { font-family: 'Source Sans 3', sans-serif !important; }
 code, .stCode { font-family: 'JetBrains Mono', monospace !important; }
 
 /* ── Hero ────────────────────────────────────────────────────────── */
@@ -238,36 +237,6 @@ section[data-testid="stSidebar"] h1 {
     font-size: 1.1rem !important; color: var(--dtu-red) !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   FIX: Load Material Symbols font for Streamlit's icon elements.
-   Streamlit renders icon names as text when this font is missing.
-   We load it via @import above and force it onto icon elements here.
-   ═══════════════════════════════════════════════════════════════════ */
-/* Streamlit icon spans use class containing "material" */
-.material-symbols-rounded,
-.material-symbols-outlined,
-.material-icons,
-[class*="material-symbols"],
-[class*="material-icons"],
-span[class*="Icon"],
-span[class*="icon"] {
-    font-family: 'Material Symbols Rounded', sans-serif !important;
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
-    -webkit-font-feature-settings: 'liga' !important;
-    font-feature-settings: 'liga' !important;
-    font-style: normal !important;
-    font-weight: normal !important;
-    direction: ltr !important;
-    -webkit-font-smoothing: antialiased !important;
-}
-/* Sidebar collapse/expand buttons */
-button[data-testid="stSidebarCollapseButton"],
-button[data-testid="baseButton-headerNoPadding"],
-div[data-testid="collapsedControl"] button {
-    min-width: 32px !important;
-    min-height: 32px !important;
-}
-
 /* ── Footer ──────────────────────────────────────────────────────── */
 .oracle-footer {
     text-align: center; padding: 2rem 0 1rem 0;
@@ -317,44 +286,6 @@ function checkScroll() {
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 window.addEventListener('scroll', checkScroll);
 setInterval(checkScroll, 500);
-
-/* ── Material Symbols font enforcement ────────────────────────── */
-/* If the font loaded via <link> above, the icon text like
-   "keyboard_double_arrow_left" IS the correct ligature — it just
-   needs the right font-family applied to render as a glyph.
-   This JS finds any element containing icon text and forces the
-   font onto it. */
-var iconNames = [
-    'keyboard_double_arrow_left', 'keyboard_double_arrow_right',
-    'keyboard_arrow_left', 'keyboard_arrow_right',
-    'arrow_right', 'arrow_left', 'arrow_forward', 'arrow_back',
-    'arrow_drop_down', 'expand_more', 'expand_less',
-    'chevron_right', 'chevron_left', 'navigate_next', 'navigate_before',
-    'menu', 'close', 'more_vert', 'more_horiz',
-    'search', 'settings', 'check', 'add', 'remove', 'delete',
-    'edit', 'visibility', 'visibility_off', 'info', 'warning',
-    'error', 'help', 'download', 'upload', 'refresh', 'share'
-];
-function fixIcons() {
-    document.querySelectorAll('span, i, button span, summary span').forEach(function(el) {
-        var txt = el.textContent.trim().toLowerCase();
-        if (txt && iconNames.indexOf(txt) !== -1) {
-            el.style.fontFamily = "'Material Symbols Rounded', sans-serif";
-            el.style.fontVariationSettings = "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24";
-            el.style.webkitFontFeatureSettings = "'liga'";
-            el.style.fontFeatureSettings = "'liga'";
-            el.style.fontStyle = 'normal';
-            el.style.direction = 'ltr';
-            el.style.webkitFontSmoothing = 'antialiased';
-            el.style.fontSize = '1.25rem';
-            el.style.lineHeight = '1';
-        }
-    });
-}
-fixIcons();
-setInterval(fixIcons, 400);
-var obs = new MutationObserver(function() { setTimeout(fixIcons, 50); });
-obs.observe(document.body, { childList: true, subtree: true });
 </script>
 """, unsafe_allow_html=True)
 
@@ -376,9 +307,17 @@ with st.sidebar:
                                 help="Exclude advisors at full capacity or unavailable")
     st.markdown("---")
     st.markdown("# 🔑 RAG Explanations")
-    api_key = st.text_input("Anthropic API Key", type="password",
-                             help="Optional: provide an API key for AI-generated match explanations",
-                             placeholder="sk-ant-...")
+    st.markdown(
+        """<div style="font-size: 0.82rem; opacity: 0.7; margin-bottom: 0.5rem;">
+        Get a <strong>free</strong> API key at
+        <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>
+        — no credit card required.
+        </div>""",
+        unsafe_allow_html=True,
+    )
+    api_key = st.text_input("Google Gemini API Key", type="password",
+                             help="Free: get yours at aistudio.google.com/apikey",
+                             placeholder="AIza...")
     use_rag = st.toggle("Enable RAG explanations", value=bool(api_key),
                          disabled=not bool(api_key),
                          help="Use Claude to generate natural-language match explanations")
@@ -604,7 +543,7 @@ the right thesis advisor.
    catalogues, and past thesis supervisions using TF-IDF similarity.
 3. Results are ranked by relevance with explanations of why each
    advisor is a good fit.
-4. _(Optional)_ With an Anthropic API key, ORACLE generates richer,
+4. _(Optional)_ With a free Google Gemini API key, ORACLE generates richer,
    AI-powered explanations using retrieval-augmented generation (RAG).
 
 **Data sources indexed:** DTU Compute staff profiles
