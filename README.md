@@ -44,8 +44,8 @@ Student query
          │ (optional)
          ▼
 ┌─────────────────┐
-│  RAG Layer       │  ← Approach 3: Anthropic API generates
-│  (Claude API)    │     natural-language explanations
+│  RAG Layer       │  ← Approach 3: Google Gemini API generates
+│  (Gemini free)   │     natural-language explanations
 └────────┬────────┘
          │
          ▼
@@ -70,7 +70,7 @@ Currently covers **19 advisors** across 8 DTU Compute sections.
 - **Semantic search** with TF-IDF + cosine similarity over composite advisor documents
 - **Field-level match explanations** showing which research areas, courses, publications matched
 - **Advisor availability tracking** — warns when advisors are at capacity
-- **RAG-powered explanations** (optional, needs Anthropic API key) for rich, contextual recommendations
+- **RAG-powered explanations** (optional, free Google Gemini API key) for rich, contextual recommendations
 - **10 example queries** spanning all research areas
 - **Responsive UI** with DTU-branded styling
 
@@ -115,4 +115,7 @@ oracle_of_lyngby/
 ---
 
 *Occasionally Reliable Academic Compass for Lost Examinees*
-"# Oracle_of_Lyngby" 
+
+## Demo
+
+![Oracle of Lyngby Demo](photos/demo.gif)
