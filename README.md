@@ -68,7 +68,7 @@ Currently covers **19 advisors** across 8 DTU Compute sections.
 ## Features
 
 - **Semantic search** with TF-IDF + cosine similarity over composite advisor documents
-- **Field-level match explanations** showing which research areas, courses, publications matched
+- **Field-level match explanations** showing which research areas, courses, and publications matched
 - **Advisor availability tracking** — warns when advisors are at capacity
 - **RAG-powered explanations** (optional, free Google Gemini API key) for rich, contextual recommendations
 - **10 example queries** spanning all research areas
