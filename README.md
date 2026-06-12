@@ -5,6 +5,9 @@
 > A search engine that connects Master's students at DTU with the right thesis supervisor **and co-supervisor** — and that **grows its own supervisor index** by exploring the DTU research net live.
 > Built at the DTU Compute Retreat 2026 — *"Have Anarchic Fun with Agentic Coding"*
 
+## Demo
+
+![Oracle of Lyngby Demo](photos/demo.gif)
 ---
 
 ## Quick Start
@@ -168,7 +171,10 @@ oracle_of_lyngby/
 ---
 
 *Occasionally Reliable Academic Compass for Lost Examinees*
+<<<<<<< HEAD
 
 ## Demo
 
 ![Oracle of Lyngby Demo](photos/demo.gif)
+=======
+>>>>>>> c57451b0f9539352f2d7213dd038f34b72322087
