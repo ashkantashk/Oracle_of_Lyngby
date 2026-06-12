@@ -2,7 +2,7 @@
 
 **Open Retrieval of Advisors by Course and Literature Expertise**
 
-> A search engine that connects Master's students at DTU with the right thesis advisor.
+> A search engine that connects Master's students at DTU with the right thesis supervisor **and co-supervisor**.
 > Built at the DTU Compute Retreat 2026 — *"Have Anarchic Fun with Agentic Coding"*
 
 ---
@@ -19,75 +19,106 @@ streamlit run app.py
 
 The app opens at `http://localhost:8501`.
 
+**Optional — RAG explanations:** store a free Gemini API key (from
+[aistudio.google.com/apikey](https://aistudio.google.com/apikey)) in
+`.streamlit/secrets.toml` (gitignored — never commit API keys):
+
+```toml
+GEMINI_API_KEY = "AIza..."
+```
+
 ---
 
 ## What It Does
 
-A student types in a description of their thesis idea or research interests. ORACLE searches across advisor profiles, publications, course catalogues, and past thesis supervisions, then returns a ranked list with explanations of why each advisor is a good match.
+A student types in a description of their thesis idea or research interests. ORACLE searches **1,615 eligible DTU researchers** (1,063 potential main supervisors, 552 potential co-supervisors), then returns a ranked list with:
 
-## Architecture
+- **Photos** of each recommended supervisor
+- A **🎓 Main supervisor / 🤝 Co-supervisor** role badge (derived from job title)
+- A **suggested supervision team** for every recommendation, matched by profile similarity. **DTU rule enforced:** postdocs, research assistants, and PhD students cannot be the main supervisor of an MSc thesis — when the best match is at that level, the team always includes an assistant/associate/full professor (preferably from the same section/group) as proposed main supervisor. E.g. if postdoc Ashkan Tashk is the top match, Per Bækgaard (Associate Professor, Cognitive Systems — same group/project) is proposed as main supervisor, with Aqdus Ilyas (postdoc on the same project) as co-supervisor.
+- A **🤖 agentic pipeline trace** showing each reasoning step the Oracle performed (parse → retrieve → rank → match co-supervisors → explore DTU net)
+- **🌐 Live DTU-net exploration** — an agent that queries the ORCID public registry for DTU-affiliated researchers matching your query and can add new discoveries to the supervisor list (`dtu_discovered.json`) with one click
+- Field-level explanations of why each advisor matched
+
+## Architecture (agentic pipeline)
 
 ```
 Student query
      │
      ▼
-┌─────────────────┐
-│  TF-IDF Index   │  ← Approach 1: keyword + bigram matching
-│  (scikit-learn)  │     with sublinear TF weighting
-└────────┬────────┘
-         │ top-k results
+┌──────────────────┐
+│ 1. Parse          │  ← tokenise query (unigrams + bigrams)
+└────────┬─────────┘
          ▼
-┌─────────────────┐
-│  Match Explainer │  ← Approach 2: field-level matching
-│  (template)      │     highlights research, courses, pubs
-└────────┬────────┘
-         │ (optional)
+┌──────────────────┐
+│ 2. Retrieve       │  ← TF-IDF index over 1,615 researcher profiles
+│   (scikit-learn)  │     (interests, AI summaries, publications + abstracts)
+└────────┬─────────┘
          ▼
-┌─────────────────┐
-│  RAG Layer       │  ← Approach 3: Google Gemini API generates
-│  (Gemini free)   │     natural-language explanations
-└────────┬────────┘
-         │
+┌──────────────────┐
+│ 3. Rank           │  ← cosine similarity, top-k results
+└────────┬─────────┘
          ▼
-   Streamlit UI
+┌──────────────────┐
+│ 4. Build          │  ← profile-similarity search assembles a
+│   supervision     │     supervision team; postdoc/PhD-level matches
+│   teams           │     always get a professor-level main supervisor
+└────────┬─────────┘
+         ▼ (optional)
+┌──────────────────┐
+│ 5. RAG Layer      │  ← Google Gemini API generates natural-language
+│   (Gemini free)   │     explanations for the supervision team
+└────────┬─────────┘
+         ▼
+   Streamlit UI  (every step shown in the 🤖 pipeline trace)
 ```
 
 ## Data Sources
 
-The advisor database is populated from:
+The advisor database is built by a scrape-and-enrich pipeline:
 
-| Source | What It Provides |
-|--------|-----------------|
-| `people.compute.dtu.dk` | Names, titles, sections, research interests |
-| DTU Orbit (`orbit.dtu.dk`) | Publications, abstracts, co-author networks |
-| Kursusbasen (`kurser.dtu.dk`) | Course titles, descriptions, learning objectives |
-| Supervised thesis records | Past thesis topics and student projects |
+| File | What It Provides |
+|------|-----------------|
+| `dtu_staff_orcids.json` | Base list: 1,704 DTU staff with ORCID iDs, job titles, affiliations, fingerprint concepts (from DTU Orbit) |
+| `dtu_supervisors.json` | + Wikidata IDs, publications with abstracts, photo references |
+| `advisors_enriched.json` | **Primary source**: + AI-generated research summaries and supervision pitches (1,707 researchers) |
+| `photos/` | ~530 researcher portraits keyed by ORCID iD |
 
-Currently covers **19 advisors** across 8 DTU Compute sections.
+`advisors_data.py` loads the richest available file, normalises each record, and classifies researchers as **supervisor** (professors, heads of section, group leaders, senior researchers), **co-supervisor** (postdocs, researchers, engineers), or **ineligible** (emeritus/administrative).
 
 ## Features
 
-- **Semantic search** with TF-IDF + cosine similarity over composite advisor documents
-- **Field-level match explanations** showing which research areas, courses, and publications matched
-- **Advisor availability tracking** — warns when advisors are at capacity
-- **RAG-powered explanations** (optional, free Google Gemini API key) for rich, contextual recommendations
-- **10 example queries** spanning all research areas
-- **Responsive UI** with DTU-branded styling
+- **Search across all of DTU** — 1,615 eligible researchers from every department, not just DTU Compute
+- **Supervisor + co-supervisor team building** — each result suggests complementary co-supervisors with photos and profile-overlap scores
+- **Researcher photos** in result cards (initials placeholder when no portrait is available)
+- **Agentic pipeline trace** rendered inside the search results — see exactly how the Oracle reasoned
+- **Field-level match explanations** showing which research concepts and publications matched
+- **RAG-powered explanations** (optional, free Google Gemini API key) covering the whole supervision team
+- **🧬 "Extend the Oracle" sidebar guide** — step-by-step procedure for upgrading to embedding-based search by scraping more supervisors
+- **Responsive UI** with DTU-branded styling, light/dark theme support
 
 ## Extending the System
 
-### Add embedding-based search (Approach 2)
+The full procedure is documented in-app (sidebar → **🧬 Extend the Oracle**):
+
+### 1. Scrape more supervisors
+Crawl `orbit.dtu.dk` (or `people.compute.dtu.dk`) for staff pages and collect names + ORCID iDs into `dtu_staff_orcids.json`.
+
+### 2. Enrich each profile
+Query the ORCID public API and Wikidata for publications, abstracts, photos, and fingerprint concepts → `dtu_supervisors.json` → `advisors_enriched.json`.
+
+### 3. Add embedding-based search (Approach 2)
 ```python
 # In search_engine.py, swap TF-IDF for:
 from sentence_transformers import SentenceTransformer
 model = SentenceTransformer('all-MiniLM-L6-v2')
-embeddings = model.encode(documents)
+embeddings = model.encode(
+    [build_advisor_document(a) for a in advisors]
+)
+# Store in a FAISS index, replace cosine ranking with nearest-neighbour search
 ```
 
-### Add more advisors
-Edit `advisors_data.py` or write a scraper targeting `people.compute.dtu.dk`.
-
-### Build a knowledge graph (Approach 4)
+### 4. Build a knowledge graph (Approach 4)
 Use co-author data from Orbit + course co-teaching to build an advisor graph.
 
 ---
@@ -96,11 +127,16 @@ Use co-author data from Orbit + course co-teaching to build an advisor graph.
 
 ```
 oracle_of_lyngby/
-├── app.py              # Streamlit frontend
-├── search_engine.py    # TF-IDF search + RAG integration
-├── advisors_data.py    # Advisor database + document builder
-├── requirements.txt    # Python dependencies
-└── README.md           # This file
+├── app.py                    # Streamlit frontend (photos, teams, agentic trace)
+├── search_engine.py          # TF-IDF search + co-supervisor matching + RAG
+├── dtu_agent.py              # DTU-net exploration agent (ORCID registry)
+├── advisors_data.py          # JSON loader, role classifier, document builder
+├── advisors_enriched.json    # Primary dataset (1,707 researchers, enriched)
+├── dtu_supervisors.json      # Intermediate dataset (Wikidata + publications)
+├── dtu_staff_orcids.json     # Base ORCID staff list
+├── photos/                   # Researcher portraits (ORCID-keyed)
+├── requirements.txt          # Python dependencies
+└── README.md                 # This file
 ```
 
 ## Success Level Achieved
@@ -110,7 +146,7 @@ oracle_of_lyngby/
 | **Minimum Viable** | ✅ Ranked list from text query with at least one data source |
 | **Solid** | ✅ Multiple data sources, explanations, handles both descriptions and keywords |
 | **Impressive** | ✅ Contextual recommendations with links, graceful vague queries, polished UI |
-| **Above and Beyond** | 🔲 Add advisor clustering, confidence scores, conversational interaction |
+| **Above and Beyond** | ✅ 1,615 real researchers, photos, supervisor + co-supervisor team matching, agentic pipeline trace |
 
 ---
 

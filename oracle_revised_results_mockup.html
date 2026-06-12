@@ -5,7 +5,7 @@
     <div style="text-align: center; padding: 2rem 1.5rem 1.5rem; border-bottom: 2px solid #990000;">
       <div style="font-size: 2rem; margin-bottom: 0.3rem;">🏛️</div>
       <div style="font-family: var(--font-serif); font-size: 1.8rem; color: #990000; font-weight: 500; line-height: 1.2;">The ORACLE of Lyngby</div>
-      <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-top: 0.4rem; letter-spacing: 0.06em; text-transform: uppercase;">Find your thesis advisor at DTU</div>
+      <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-top: 0.4rem; letter-spacing: 0.06em; text-transform: uppercase;">Find your thesis advisor at DTU · 1,615 researchers indexed</div>
     </div>
 
     <div style="padding: 1.5rem 2rem;">
@@ -14,66 +14,120 @@
         <span style="font-size: 0.92rem; color: var(--color-text-primary);">I want to investigate how typography affects reading comprehension using eye-tracking and cognitive load measurements</span>
       </div>
 
+      <!-- ── Agentic pipeline trace ──────────────────────────────────── -->
+      <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 0.9rem 1.2rem; margin-bottom: 1.2rem;">
+        <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">🤖 Agentic pipeline — how the Oracle reasoned</div>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary); line-height: 1.7;">
+          <span style="display:inline-block;width:1.3rem;height:1.3rem;border-radius:50%;background:#990000;color:#fff;text-align:center;font-size:0.68rem;line-height:1.3rem;margin-right:0.4rem;">1</span><strong>Parse query</strong> — tokenised the request into 14 terms (unigrams + bigrams, stop-words removed)<br>
+          <span style="display:inline-block;width:1.3rem;height:1.3rem;border-radius:50%;background:#990000;color:#fff;text-align:center;font-size:0.68rem;line-height:1.3rem;margin-right:0.4rem;">2</span><strong>Retrieve</strong> — compared against 1,615 DTU researcher profiles (interests, summaries, publications + abstracts)<br>
+          <span style="display:inline-block;width:1.3rem;height:1.3rem;border-radius:50%;background:#990000;color:#fff;text-align:center;font-size:0.68rem;line-height:1.3rem;margin-right:0.4rem;">3</span><strong>Rank</strong> — ordered candidates by cosine similarity — top match Ashkan Tashk at 19%<br>
+          <span style="display:inline-block;width:1.3rem;height:1.3rem;border-radius:50%;background:#990000;color:#fff;text-align:center;font-size:0.68rem;line-height:1.3rem;margin-right:0.4rem;">4</span><strong>Match co-supervisors</strong> — found the most similar researcher profiles for each recommendation<br>
+          <span style="display:inline-block;width:1.3rem;height:1.3rem;border-radius:50%;background:#990000;color:#fff;text-align:center;font-size:0.68rem;line-height:1.3rem;margin-right:0.4rem;">5</span><strong>Done</strong> — pipeline completed in 66 ms, returning 3 recommendations
+        </div>
+      </div>
+
       <div style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500; margin: 1.2rem 0 1rem; color: var(--color-text-primary);">Top 3 advisors for your query <span style="font-size: 0.78rem; color: var(--color-text-tertiary); font-family: var(--font-sans); font-weight: 400;">ranked by relevance</span></div>
 
+      <!-- ── #1 ─────────────────────────────────────────────────────── -->
       <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.2rem 1.4rem; margin-bottom: 0.8rem; border-left: 4px solid #990000; position: relative;">
         <div style="position: absolute; top: 0.8rem; right: 1.2rem; font-family: var(--font-serif); font-size: 1.4rem; color: #c9a84c; opacity: 0.5;">#1</div>
-        <div style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500;">Ashkan Tashk</div>
-        <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Postdoctoral Researcher · DTU Compute, Building 321</div>
-        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem;">
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; background: var(--color-background-secondary); color: var(--color-text-secondary);">Cognitive Systems</span>
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; font-family: var(--font-mono); background: #e8f5e9; color: #2d8a4e;">match: 32%</span>
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; background: #e8f5e9; color: #2d8a4e;">✓ Available (1/3 students)</span>
+        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: #990000; color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 1.4rem; border: 3px solid #c9a84c; flex-shrink: 0;">AT</div>
+          <div>
+            <div style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500;">Ashkan Tashk</div>
+            <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Postdoc · Department of Applied Mathematics and Computer Science</div>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem;">
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; background: var(--color-background-secondary); color: var(--color-text-secondary);">Cognitive Systems</span>
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; font-family: var(--font-mono); background: #fff8e1; color: #c48a1a;">match: 19%</span>
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; background: #f3e8fb; color: #6a2d8c;">🤝 Co-supervisor</span>
+            </div>
+          </div>
         </div>
         <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.7rem 0.9rem; font-size: 0.85rem; line-height: 1.6;">
-          <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Research alignment:</span> Eye-Tracking Data Analysis, Typography and Legibility, Psychophysics<br>
-          <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Past thesis supervision:</span> Font legibility psychophysics experiments, TEPR analysis for cognitive load
+          <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Research alignment:</span> Reading Applications, Reading Experience, Eye-Tracking, Eye-Tracking Technology
+        </div>
+        <div style="margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px dashed var(--color-border-tertiary);">
+          <div style="font-size: 0.72rem; font-weight: 600; color: #990000; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem;">🎓 Suggested supervision team</div>
+          <div style="font-size: 0.72rem; font-style: italic; color: var(--color-text-tertiary); margin-bottom: 0.4rem;">Postdocs cannot act as main supervisor of an MSc thesis — this team includes a professor-level main supervisor.</div>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border: 2px solid #1f4e8c; border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">PB</span><span><strong style="color: #1f4e8c;">Per Bækgaard</strong> · 🎓 Main supervisor · Assoc. Prof.</span></span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">CI</span>Chaudhary M. A. Ilyas · 🤝 Co-supervisor · 44%</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">JT</span>Jeppe Thagaard · 🤝 Co-supervisor · 9%</span>
+          </div>
         </div>
         <div style="margin-top: 0.6rem; font-size: 0.82rem;">
-          <span style="color: #990000;">🌐 Profile</span> · <span style="color: #990000;">📚 Orbit</span> · <span style="color: var(--color-text-secondary);">✉ ashta@dtu.dk</span>
+          <span style="color: #990000;">📚 Orbit profile</span> · <span style="color: #990000;">🆔 ORCID</span>
         </div>
       </div>
 
+      <!-- ── #2 ─────────────────────────────────────────────────────── -->
       <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.2rem 1.4rem; margin-bottom: 0.8rem; border-left: 4px solid #990000; position: relative;">
         <div style="position: absolute; top: 0.8rem; right: 1.2rem; font-family: var(--font-serif); font-size: 1.4rem; color: #c9a84c; opacity: 0.5;">#2</div>
-        <div style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500;">Per Bækgaard</div>
-        <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Associate Professor · DTU Compute, Building 321</div>
-        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem;">
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; background: var(--color-background-secondary); color: var(--color-text-secondary);">Cognitive Systems</span>
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; font-family: var(--font-mono); background: #e8f5e9; color: #2d8a4e;">match: 31%</span>
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; background: #fff8e1; color: #c48a1a;">⚠ Limited (4/5 students)</span>
+        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: #990000; color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 1.4rem; border: 3px solid #c9a84c; flex-shrink: 0;">PB</div>
+          <div>
+            <div style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500;">Per Bækgaard</div>
+            <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Associate Professor · Department of Applied Mathematics and Computer Science</div>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem;">
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; background: var(--color-background-secondary); color: var(--color-text-secondary);">Cognitive Systems</span>
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; font-family: var(--font-mono); background: #fff8e1; color: #c48a1a;">match: 15%</span>
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; background: #e8f0fb; color: #1f4e8c;">🎓 Main supervisor</span>
+            </div>
+          </div>
         </div>
         <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.7rem 0.9rem; font-size: 0.85rem; line-height: 1.6;">
-          <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Research alignment:</span> Eye Tracking, Cognitive Neuroscience<br>
-          <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Past thesis supervision:</span> Font legibility and cognitive load, Eye-tracking biometrics
+          <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Research alignment:</span> Eye Tracking, Cognitive Load, Reading Behaviour, Human-Centered AI
+        </div>
+        <div style="margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px dashed var(--color-border-tertiary);">
+          <div style="font-size: 0.72rem; font-weight: 600; color: #990000; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.4rem;">🤝 Suggested co-supervisors</div>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">JH</span>John Paulin Hansen · 18%</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">JB</span>Jakob E. Bardram · 12%</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">FM</span>Fiona B. Mulvey · 7%</span>
+          </div>
         </div>
         <div style="margin-top: 0.6rem; font-size: 0.82rem;">
-          <span style="color: #990000;">🌐 Profile</span> · <span style="color: #990000;">📚 Orbit</span> · <span style="color: var(--color-text-secondary);">✉ pgba@dtu.dk</span>
+          <span style="color: #990000;">📚 Orbit profile</span> · <span style="color: #990000;">🆔 ORCID</span> · <span style="color: #990000;">🌐 Wikidata</span>
         </div>
       </div>
 
+      <!-- ── #3 ─────────────────────────────────────────────────────── -->
       <div style="background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.2rem 1.4rem; margin-bottom: 0.8rem; border-left: 4px solid #990000; position: relative;">
         <div style="position: absolute; top: 0.8rem; right: 1.2rem; font-family: var(--font-serif); font-size: 1.4rem; color: #c9a84c; opacity: 0.5;">#3</div>
-        <div style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500;">Chaudhary Muhammad Aqdus Ilyas</div>
-        <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Postdoctoral Researcher · DTU Compute, Building 321</div>
-        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem;">
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; background: var(--color-background-secondary); color: var(--color-text-secondary);">Cognitive Systems</span>
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; font-family: var(--font-mono); background: #e8f5e9; color: #2d8a4e;">match: 21%</span>
-          <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; background: #e8f5e9; color: #2d8a4e;">✓ Available (1/3 students)</span>
+        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: #990000; color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 1.4rem; border: 3px solid #c9a84c; flex-shrink: 0;">CI</div>
+          <div>
+            <div style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500;">Chaudhary Muhammad Aqdus Ilyas</div>
+            <div style="font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Postdoc · Department of Applied Mathematics and Computer Science</div>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem;">
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; background: var(--color-background-secondary); color: var(--color-text-secondary);">Cognitive Systems</span>
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; font-family: var(--font-mono); background: #fff0e0; color: #b86a14;">match: 14%</span>
+              <span style="display: inline-block; padding: 0.12rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 500; background: #f3e8fb; color: #6a2d8c;">🤝 Co-supervisor</span>
+            </div>
+          </div>
         </div>
         <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.7rem 0.9rem; font-size: 0.85rem; line-height: 1.6;">
           <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Research alignment:</span> Eye Tracking, Adaptive Reading Applications, Computer Vision<br>
           <span style="font-weight: 500; color: #990000; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em;">Related publications:</span> Context Preservation Through Eye Tracking: Adaptive Reading Application Design
         </div>
+        <div style="margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px dashed var(--color-border-tertiary);">
+          <div style="font-size: 0.72rem; font-weight: 600; color: #990000; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem;">🎓 Suggested supervision team</div>
+          <div style="font-size: 0.72rem; font-style: italic; color: var(--color-text-tertiary); margin-bottom: 0.4rem;">Postdocs cannot act as main supervisor of an MSc thesis — this team includes a professor-level main supervisor.</div>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border: 2px solid #1f4e8c; border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">PB</span><span><strong style="color: #1f4e8c;">Per Bækgaard</strong> · 🎓 Main supervisor · Assoc. Prof.</span></span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">AT</span>Ashkan Tashk · 🤝 Co-supervisor · 44%</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: var(--color-background-secondary); border-radius: 99px; padding: 0.2rem 0.7rem 0.2rem 0.2rem; font-size: 0.76rem;"><span style="width: 26px; height: 26px; border-radius: 50%; background: #990000; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; border: 2px solid #c9a84c;">MP</span>Michael Kai Petersen · 🤝 Co-supervisor · 5%</span>
+          </div>
+        </div>
         <div style="margin-top: 0.6rem; font-size: 0.82rem;">
-          <span style="color: #990000;">🌐 Orbit</span> · <span style="color: var(--color-text-secondary);">✉ cmuai@dtu.dk</span>
+          <span style="color: #990000;">📚 Orbit profile</span> · <span style="color: #990000;">🆔 ORCID</span>
         </div>
       </div>
 
     </div>
 
     <div style="text-align: center; padding: 1rem; border-top: 0.5px solid var(--color-border-tertiary); font-size: 0.72rem; color: var(--color-text-tertiary);">
-      The ORACLE of Lyngby · DTU Compute Retreat 2026<br>
+      The ORACLE of Lyngby · DTU Compute Retreat 2026 · 1,615 researchers · supervisor + co-supervisor matching<br>
       <em>Occasionally reliable academic compass for lost examinees</em>
     </div>
   </div>
