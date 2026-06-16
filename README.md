@@ -22,6 +22,12 @@ streamlit run app.py
 
 The app opens at `http://localhost:8501`.
 
+### Fast Executable Version
+Its executable version is also accessible directly from the following link (Ctrl+Click or Cmd+Click to open in a new tab):
+
+<a href="https://oracleoflyngby-dvv6ck3f4q7ns3qjj6zcwh.streamlit.app" target="_blank" rel="noopener noreferrer">Launch Oracle of Lyngby</a>
+
+
 **Optional — RAG explanations:** store a free Gemini API key (from
 [aistudio.google.com/apikey](https://aistudio.google.com/apikey)) in
 `.streamlit/secrets.toml` (gitignored — never commit API keys):
@@ -54,32 +60,32 @@ Student query
      │
      ▼
 ┌──────────────────┐
-│ 1. Parse          │  ← tokenise query (unigrams + bigrams)
+│ 1. Parse         │  ← tokenise query (unigrams + bigrams)
 └────────┬─────────┘
          ▼
 ┌──────────────────┐
-│ 2. Retrieve       │  ← TF-IDF index (sublinear TF, BM25-like) over
-│   (scikit-learn)  │     all researcher profiles (interests, AI
+│ 2. Retrieve      │  ← TF-IDF index (sublinear TF, BM25-like) over
+│   (scikit-learn) │     all researcher profiles (interests, AI
 └────────┬─────────┘     summaries, publications + abstracts)
          ▼
 ┌──────────────────┐
-│ 3. Rank           │  ← cosine similarity, top-k results
+│ 3. Rank          │  ← cosine similarity, top-k results
 └────────┬─────────┘
          ▼
 ┌──────────────────┐
-│ 4. Build          │  ← profile-similarity search assembles a
-│   supervision     │     supervision team; postdoc/PhD-level matches
-│   teams           │     always get a professor-level main supervisor
+│ 4. Build         │  ← profile-similarity search assembles a
+│   supervision    │     supervision team; postdoc/PhD-level matches
+│   teams          │     always get a professor-level main supervisor
 └────────┬─────────┘
          ▼ (optional)
 ┌──────────────────┐
-│ 5. Explore        │  ← live ORCID-registry search for DTU researchers
-│   DTU net         │     matching the query; new finds can be saved to
+│ 5. Explore       │  ← live ORCID-registry search for DTU researchers
+│   DTU net        │     matching the query; new finds can be saved to
 └────────┬─────────┘     dtu_discovered.json and join the index
          ▼ (optional)
 ┌──────────────────┐
-│ 6. RAG Layer      │  ← Google Gemini (gemini-2.0-flash, free tier)
-│   (Gemini free)   │     generates natural-language explanations
+│ 6. RAG Layer     │  ← Google Gemini (gemini-2.0-flash, free tier)
+│   (Gemini free)  │     generates natural-language explanations
 └────────┬─────────┘     for the whole supervision team
          ▼
    Streamlit UI  (every step shown in the 🤖 pipeline trace)
@@ -170,11 +176,14 @@ oracle_of_lyngby/
 
 ---
 
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2026 ASHKAN TASHK
+
+---
+
 *Occasionally Reliable Academic Compass for Lost Examinees*
-<<<<<<< HEAD
 
-## Demo
 
-![Oracle of Lyngby Demo](photos/demo.gif)
-=======
->>>>>>> c57451b0f9539352f2d7213dd038f34b72322087
