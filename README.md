@@ -25,7 +25,7 @@ The app opens at `http://localhost:8501`.
 ### Fast Executable Version
 Its executable version is also accessible directly from the following link (Ctrl+Click or Cmd+Click to open in a new tab):
 
-<a href="https://oracleoflyngby-dvv6ck3f4q7ns3qjj6zcwh.streamlit.app" target="_blank" rel="noopener noreferrer">Launch Oracle of Lyngby</a>
+<a href="https://oracleoflyngby-kxfayyrbrdzkfdwrkqx55e.streamlit.app" target="_blank" rel="noopener noreferrer">Launch Oracle of Lyngby</a>
 
 
 **Optional — RAG explanations:** store a free Gemini API key (from
